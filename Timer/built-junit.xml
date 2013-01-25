@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+
+<project name="Serotonin JSON - JUnit" basedir="." default="tests-run">
+    <import file="build.xml"/>
+    
+    <property name="test.src.dir" value="src-junit"/>
+    <property name="test.classes.dir" value="target/test-classes"/>
+
+    <path id="junit-classpath">
+        <path refid="master-classpath"/>
+        <fileset dir="lib-junit">
+            <include name="*.jar" />
+        </fileset>
+        <pathelement location="${test.classes.dir}" />
+    </path>
+    
+    <!-- ============================================================== -->
+    <!-- JUnit deployment tasks                                         -->
+    <!-- ============================================================== -->
+    <target name="tests-compile" depends="compile" description="Compile Java test sources">
+        <mkdir dir="${test.classes.dir}" />
+        <javac destdir="${test.classes.dir}" debug="true" debuglevel="lines,vars,source"
+                deprecation="false" optimize="false" failonerror="true" includeantruntime="false">
+            <src path="${test.src.dir}"/>
+            <classpath refid="junit-classpath"/>
+        </javac>
+    </target>
+    
+    <!-- run-tests provides plain text output, and will FAIL the build
+        if the junit tests fail.  Call this in builds where you do not
+        want success without successful build tests-->
+    <target name="tests-run" depends="tests-compile" description="Execute Test Cases">
+        <antcall target="|tests-internal">
+            <param name="junit.fail.on.error" value="Yes" />
+            <param name="junit.format" value="plain" />
+            <param name="junit.output.dir" value="target/test-plain/" />
+        </antcall>
+    </target>
+
+    <!-- report-tests runs all unit tests, and creates javadoc-like summary
+        reports of test results.  It does *NOT* fail the build if tests fail, so do
+        not use it in any context where you only want to proceed when all tests
+        pass -->
+    <target name="tests-report" depends="tests-compile" description="Create HTML report of junit tests">
+        <antcall target="|tests-internal">
+            <param name="junit.fail.on.error" value="No" />
+            <param name="junit.format" value="xml" />
+            <param name="junit.output.dir" value="target/test-reports"/>
+        </antcall>
+
+        <junitreport todir="target/test-reports/">
+            <fileset dir="target/test-reports/">
+                <include name="TEST-*.xml" />
+            </fileset>
+            <report format="frames" todir="target/test-reports" />
+        </junitreport>
+    </target>
+    
+    <target name="tests-clean" description="Remove junit output directories">
+        <delete>
+            <fileset dir="${test.classes.dir}"><include name="**/*"/></fileset>
+            <fileset dir="target/test-plain"><include name="**/*"/></fileset>
+            <fileset dir="target/test-reports"><include name="**/*"/></fileset>
+        </delete>
+    </target>
+    
+    <target name="|tests-internal">
+        <mkdir dir="${junit.output.dir}" />
+
+        <echo>Writing test output to: ${junit.output.dir}</echo>
+
+        <junit printsummary="yes" haltonfailure="${junit.fail.on.error}" showoutput="no">
+            <classpath>
+                <path refid="junit-classpath"/>
+            </classpath>
+
+            <formatter type="${junit.format}" />
+
+            <batchtest fork="yes" todir="${junit.output.dir}">
+                <fileset dir="${test.classes.dir}">
+                    <!-- Skip test harness classes -->
+                    <exclude name="**/harness/**/*.class" />
+                    <exclude name="**/*$*.class" />
+                    <include name="**/*Test*.class" />
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+</project>
