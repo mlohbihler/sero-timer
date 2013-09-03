@@ -16,8 +16,18 @@ public class FixedRateTrigger extends AbstractTimerTrigger {
     }
 
     @Override
-    protected long calculateNextExecutionTime() {
+    protected long calculateNextExecutionTimeImpl() {
         return nextExecutionTime + period;
+    }
+
+    @Override
+    protected long calculateNextExecutionTimeImpl(long after) {
+        long d = after - nextExecutionTime;
+        if (d < 0)
+            return nextExecutionTime + period;
+
+        long periods = d / period;
+        return nextExecutionTime + period * (periods + 1);
     }
 
     @Override

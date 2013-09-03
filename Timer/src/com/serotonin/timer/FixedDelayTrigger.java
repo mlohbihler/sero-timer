@@ -16,8 +16,13 @@ public class FixedDelayTrigger extends AbstractTimerTrigger {
     }
 
     @Override
-    protected long calculateNextExecutionTime() {
+    protected long calculateNextExecutionTimeImpl() {
         return timer.currentTimeMillis() + period;
+    }
+
+    @Override
+    protected long calculateNextExecutionTimeImpl(long after) {
+        return after + period;
     }
 
     @Override

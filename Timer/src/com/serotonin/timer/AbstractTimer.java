@@ -5,6 +5,8 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 abstract public class AbstractTimer {
+    abstract public boolean isInitialized();
+
     abstract public long currentTimeMillis();
 
     abstract public void execute(Runnable command);

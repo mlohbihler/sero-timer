@@ -119,7 +119,7 @@ public abstract class TimerTask implements Runnable {
 
         String originalName = null;
         try {
-            if (StringUtils.isBlank(name)) {
+            if (!StringUtils.isBlank(name)) {
                 // This uses roughly the same code as in NamedRunnable to rename
                 // the thread for the duration of the task execution.
                 originalName = Thread.currentThread().getName();

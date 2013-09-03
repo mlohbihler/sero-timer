@@ -17,10 +17,12 @@ class TimerThread extends Thread {
     private final TaskQueue queue;
 
     private final ExecutorService executorService;
+    private final TimeSource timeSource;
 
-    TimerThread(TaskQueue queue, ExecutorService executorService) {
+    TimerThread(TaskQueue queue, ExecutorService executorService, TimeSource timeSource) {
         this.queue = queue;
         this.executorService = executorService;
+        this.timeSource = timeSource;
     }
 
     @Override
@@ -78,7 +80,7 @@ class TimerThread extends Thread {
                             continue; // No action required, poll queue again
                         }
                         executionTime = task.trigger.nextExecutionTime;
-                        if (taskFired = (executionTime <= System.currentTimeMillis())) {
+                        if (taskFired = (executionTime <= timeSource.currentTimeMillis())) {
                             long next = task.trigger.calculateNextExecutionTime();
                             if (next <= 0) { // Non-repeating, remove
                                 queue.removeMin();
@@ -90,7 +92,7 @@ class TimerThread extends Thread {
                         }
                     }
                     if (!taskFired) {// Task hasn't yet fired; wait
-                        long wait = executionTime - System.currentTimeMillis();
+                        long wait = executionTime - timeSource.currentTimeMillis();
                         if (wait > 0)
                             queue.wait(wait);
                     }

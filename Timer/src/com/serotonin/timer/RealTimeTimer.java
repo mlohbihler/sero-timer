@@ -3,6 +3,9 @@ package com.serotonin.timer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class RealTimeTimer extends AbstractTimer {
     /**
@@ -17,13 +20,29 @@ public class RealTimeTimer extends AbstractTimer {
      */
     private TimerThread thread;
 
+    // Do i own the executor?
+    private boolean ownsExecutor;
+    private Exception cancelStack;
+
+    private TimeSource timeSource = new SystemTimeSource();
+
+    public void setTimeSource(TimeSource timeSource) {
+        this.timeSource = timeSource;
+    }
+
+    public void init() {
+        ownsExecutor = true;
+        init(new ThreadPoolExecutor(0, 1000, 30L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>()));
+    }
+
     public void init(ExecutorService executorService) {
-        thread = new TimerThread(queue, executorService);
+        thread = new TimerThread(queue, executorService, timeSource);
         thread.setName("Serotonin Timer");
         thread.setDaemon(false);
         thread.start();
     }
 
+    @Override
     public boolean isInitialized() {
         return thread != null;
     }
@@ -38,6 +57,8 @@ public class RealTimeTimer extends AbstractTimer {
         synchronized (queue) {
             if (thread != null)
                 thread.newTasksMayBeScheduled = false;
+            if (cancelStack == null)
+                cancelStack = new Exception();
             queue.notify();
         }
     }
@@ -88,8 +109,17 @@ public class RealTimeTimer extends AbstractTimer {
             throw new IllegalStateException("Task already executed or cancelled");
 
         synchronized (queue) {
-            if (!thread.newTasksMayBeScheduled)
+            if (!thread.newTasksMayBeScheduled) {
+                if (cancelStack != null) {
+                    System.err.println("Timer already cancelled.");
+                    System.err.println("   Cancel stack:");
+                    cancelStack.printStackTrace();
+                    System.err.println("   Current stack:");
+                    new Exception().printStackTrace();
+                    throw new IllegalStateException("Timer already cancelled.", cancelStack);
+                }
                 throw new IllegalStateException("Timer already cancelled.");
+            }
 
             synchronized (task.lock) {
                 if (task.state == TimerTask.VIRGIN) {
@@ -127,10 +157,16 @@ public class RealTimeTimer extends AbstractTimer {
         List<TimerTask> tasks;
         synchronized (queue) {
             thread.newTasksMayBeScheduled = false;
+            if (cancelStack == null)
+                cancelStack = new Exception();
             tasks = getTasks();
             queue.clear();
             queue.notify(); // In case queue was already empty.
         }
+
+        if (ownsExecutor)
+            getExecutorService().shutdown();
+
         return tasks;
     }
 
@@ -190,7 +226,7 @@ public class RealTimeTimer extends AbstractTimer {
 
     @Override
     public long currentTimeMillis() {
-        return System.currentTimeMillis();
+        return timeSource.currentTimeMillis();
     }
     //
     // @SuppressWarnings("unchecked")

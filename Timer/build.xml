@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="Serotonin Timer" basedir="." default="jar">
+<project name="Serotonin Timer" basedir="." default="deploy">
 	<property file="build.properties" />
 
 	<path id="master-classpath">

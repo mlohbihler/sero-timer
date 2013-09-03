@@ -12,9 +12,14 @@ public class CronTimerTrigger extends TimerTrigger {
     }
 
     @Override
-    protected long calculateNextExecutionTime() {
+    protected long calculateNextExecutionTimeImpl() {
         mostRecent = nextExecutionTime;
         return cronExpression.getNextValidTimeAfter(new Date(nextExecutionTime)).getTime();
+    }
+
+    @Override
+    protected long calculateNextExecutionTimeImpl(long after) {
+        return cronExpression.getNextValidTimeAfter(new Date(after)).getTime();
     }
 
     @Override

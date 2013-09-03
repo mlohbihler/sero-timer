@@ -17,6 +17,11 @@ public class SimulationTimer extends AbstractTimer {
     private boolean cancelled;
     private long currentTime;
 
+    @Override
+    public boolean isInitialized() {
+        return true;
+    }
+
     public void setStartTime(long startTime) {
         currentTime = startTime;
     }

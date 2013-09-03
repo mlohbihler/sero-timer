@@ -12,7 +12,12 @@ public class OneTimeTrigger extends AbstractTimerTrigger {
     }
 
     @Override
-    protected long calculateNextExecutionTime() {
+    protected long calculateNextExecutionTimeImpl() {
+        return 0;
+    }
+
+    @Override
+    protected long calculateNextExecutionTimeImpl(long after) {
         return 0;
     }
 

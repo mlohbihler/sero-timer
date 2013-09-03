@@ -3,6 +3,10 @@ package com.serotonin.timer;
 import java.util.Date;
 
 abstract public class TimerTrigger {
+    // The maximum time that a task can run late. If the next run time is calculated to be more than this in the past
+    // it will be adjusted to be more current.
+    private static final int MAX_TARDINESS = 1000 * 60 * 10; // 10 minutes.
+
     protected AbstractTimer timer;
 
     void setTimer(AbstractTimer timer) {
@@ -56,5 +60,21 @@ abstract public class TimerTrigger {
      * 
      * @return
      */
-    abstract protected long calculateNextExecutionTime();
+    protected final long calculateNextExecutionTime() {
+        long next = calculateNextExecutionTimeImpl();
+
+        // If the system time changes on the O/S (due to NTP, manual change, or some other reason) this calculation
+        // can cause a good amount of disturbance (either a schedule that doesn't run for a while, or one that runs
+        // repeatedly in order to catch up). We check here to assure that the next execution time is not entirely
+        // ridiculous, and adjust it if so.
+        long now = timer.currentTimeMillis();
+        if (now - next >= MAX_TARDINESS)
+            next = calculateNextExecutionTimeImpl(now);
+
+        return next;
+    }
+
+    abstract protected long calculateNextExecutionTimeImpl();
+
+    abstract protected long calculateNextExecutionTimeImpl(long after);
 }

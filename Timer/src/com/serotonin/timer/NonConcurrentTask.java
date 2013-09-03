@@ -1,5 +1,7 @@
 package com.serotonin.timer;
 
+import java.util.Date;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -14,6 +16,7 @@ abstract public class NonConcurrentTask extends TimerTask {
     private static final Log LOG = LogFactory.getLog(NonConcurrentTask.class);
 
     private Thread thread;
+    private long threadRuntime;
 
     public NonConcurrentTask(TimerTrigger trigger) {
         super(trigger);
@@ -27,12 +30,14 @@ abstract public class NonConcurrentTask extends TimerTask {
     final public void run(long runtime) {
         Thread localThread = thread;
         if (localThread != null) {
-            LOG.warn("NonConcurrentTask run aborted because another run has not yet completed: " + getClass().getName());
+            LOG.warn("NonConcurrentTask run at " + new Date(runtime) + " aborted because another run at "
+                    + new Date(threadRuntime) + " has not yet completed: " + getClass().getName());
             return;
         }
 
         try {
             thread = Thread.currentThread();
+            threadRuntime = runtime;
             runNonConcurrent(runtime);
         }
         finally {
