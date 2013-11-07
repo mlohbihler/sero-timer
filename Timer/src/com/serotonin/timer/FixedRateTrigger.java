@@ -5,6 +5,18 @@ import java.util.Date;
 public class FixedRateTrigger extends AbstractTimerTrigger {
     private final long period;
 
+    /**
+     * Use this constructor to quantize the start of the trigger to the period.
+     * 
+     * @param period
+     * @param now
+     * @param quantize
+     *            unused. Required for signature uniqueness.
+     */
+    public FixedRateTrigger(long period, long now, boolean quantize) {
+        this(new Date(now + period - (now % period)), period);
+    }
+
     public FixedRateTrigger(long delay, long period) {
         super(delay);
         this.period = period;
