@@ -7,7 +7,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 public class RealTimeTimer extends AbstractTimer {
+    private static final Log LOG = LogFactory.getLog(RealTimeTimer.class);
+
     /**
      * The timer task queue. This data structure is shared with the timer thread. The timer produces tasks, via its
      * various schedule calls, and the timer thread consumes, executing timer tasks as appropriate, and removing them
@@ -111,11 +116,9 @@ public class RealTimeTimer extends AbstractTimer {
         synchronized (queue) {
             if (!thread.newTasksMayBeScheduled) {
                 if (cancelStack != null) {
-                    System.err.println("Timer already cancelled.");
-                    System.err.println("   Cancel stack:");
-                    cancelStack.printStackTrace();
-                    System.err.println("   Current stack:");
-                    new Exception().printStackTrace();
+                    LOG.error("Timer already cancelled.");
+                    LOG.error("   Cancel stack:", cancelStack);
+                    LOG.error("   Current stack:", new Exception());
                     throw new IllegalStateException("Timer already cancelled.", cancelStack);
                 }
                 throw new IllegalStateException("Timer already cancelled.");

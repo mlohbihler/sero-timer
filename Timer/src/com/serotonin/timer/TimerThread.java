@@ -1,8 +1,14 @@
 package com.serotonin.timer;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 class TimerThread extends Thread {
+    private static final Log LOG = LogFactory.getLog(TimerThread.class);
+
     /**
      * This flag is set to false by the reaper to inform us that there are no more live references to our Timer object.
      * Once this flag is true and there are no more tasks in our queue, there is no work left for us to do, so we
@@ -29,6 +35,9 @@ class TimerThread extends Thread {
     public void run() {
         try {
             mainLoop();
+        }
+        catch (Throwable t) {
+            LOG.fatal("TimerThread failed", t);
         }
         finally {
             // Someone killed this Thread, behave as if Timer was cancelled
@@ -97,8 +106,15 @@ class TimerThread extends Thread {
                             queue.wait(wait);
                     }
                 }
-                if (taskFired) // Task fired; run it, holding no locks
-                    executorService.execute(task);
+                if (taskFired) {
+                    // Task fired; run it, holding no locks
+                    try {
+                        executorService.execute(task);
+                    }
+                    catch (RejectedExecutionException e) {
+                        LOG.warn("Rejected task: " + task, e);
+                    }
+                }
             }
             catch (InterruptedException e) {
                 // no op
